@@ -36,17 +36,14 @@ namespace HomeWork_ModuleTask
 
     struct Card
     {
-        public Card(Rank rank, Suit suit, bool isFace)
+        public Card(Rank rank, Suit suit)
         {
             Rank = rank;
             Suit = suit;
-            IsFace = isFace;
         }
 
         public Rank Rank;
         public Suit Suit;
-        public bool IsFace;
-
     }
 
     class Program
@@ -54,12 +51,12 @@ namespace HomeWork_ModuleTask
         static void Main(string[] args)
         {
             Player player = new Player();
-            Player diler = new Player();
+            Player dealer = new Player();
 
             int command = 0;
             do
             {
-                Console.WriteLine("1 - Game, 3 - Exit");
+                Console.WriteLine("1 - Game, 2 - View score 3 - Exit");
                 command = int.Parse(Console.ReadLine());
                 switch (command)
                 {
@@ -68,31 +65,94 @@ namespace HomeWork_ModuleTask
                         Card[] deck = GenerateDeck();
                         Shuffle(deck);
                         int index = 0;
-
                         player.Hand = AddCard(player.Hand, deck[index++]);
                         player.Hand = AddCard(player.Hand, deck[index++]);
-                        diler.Hand = AddCard(diler.Hand, deck[index++]);
-                        diler.Hand = AddCard(diler.Hand, deck[index++]);
+                        dealer.Hand = AddCard(dealer.Hand, deck[index++]);
+                        RewriteWindow(player, dealer);
 
-                        DisplayHand(player.Hand);
-                        do {
-                            Console.WriteLine("More card?");
-                            if (Console.ReadLine().ToUpper() == "Y")
+                        if ((player.Hand[0].Rank == Rank.Ace && player.Hand[1].Rank == Rank.Ace) || GetHendScore(player.Hand) == 21)
+                            Console.WriteLine("Black Jack");
+                        else
+                        {
+                            do
                             {
-                                player.Hand = AddCard(player.Hand, deck[index++]);
+                                Console.WriteLine("More card? 1 - yes, 2 - no");
+                                if (int.Parse(Console.ReadLine()) == 1)
+                                {
+                                    player.Hand = AddCard(player.Hand, deck[index++]);
+                                    Console.Clear();
+                                    RewriteWindow(player, dealer);
+                                    if (GetHendScore(player.Hand) == 21)
+                                    {
+                                        Console.WriteLine("BlackJack");
+                                        break;
+                                    }
+                                    else if(GetHendScore(player.Hand) > 21)
+                                    {
+                                        Console.WriteLine("Overload");
+                                        break;
+                                    }
+                                }
+                                else { break; }                             
+                            } while (index < deck.Length);
+                        }
+
+                        Console.WriteLine("Dealer:");
+                        dealer.Hand = AddCard(dealer.Hand, deck[index++]);
+                        RewriteWindow(player, dealer);
+
+                        if ((player.Hand[0].Rank == Rank.Ace && player.Hand[1].Rank == Rank.Ace) || GetHendScore(dealer.Hand) == 21)
+                            Console.WriteLine("Dealer BlackJack");
+                        else
+                        {
+                            if (GetHendScore(dealer.Hand) < 21)
+                            {
+                                Random rnd = new Random();
+                                while (GetHendScore(dealer.Hand) < 21)
+                                {
+                                    if (GetHendScore(player.Hand) > 21 && rnd.Next(0, 100) > 50)
+                                        break;
+
+                                    dealer.Hand = AddCard(dealer.Hand, deck[index++]);
+                                    RewriteWindow(player, dealer);
+                                    if (GetHendScore(dealer.Hand) == 21)
+                                    {
+                                        Console.WriteLine("Dealer BlackJack");
+                                        break;
+                                    }
+                                }
                             }
-                            else { break; }
-                            DisplayHand(player.Hand);
-                        } while (index < deck.Length);
+                        }
 
+                        if (GetHendScore(dealer.Hand) == GetHendScore(player.Hand))
+                        {
+                            Console.WriteLine("Dead hit");
+                        }
+                        else if (GetHendScore(dealer.Hand) > GetHendScore(player.Hand))
+                        {
+                            Console.WriteLine("Player WIN!!!!");
+                            player.Wins++;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Dealer win");
+                            dealer.Wins++;
+                        }
 
-                        Console.WriteLine("1");
+                        index = 0;
+                        Shuffle(deck);
+                        dealer.Hand = null;
+                        player.Hand = null;
                         break;
                     case 2:
-                        Console.WriteLine("2");
+                        Console.Clear();
+                        Console.WriteLine("Player win {0} times", player.Wins);
+                        Console.WriteLine("Dealer win {0} times", dealer.Wins);
                         break;
                     case 3:
-                        Console.WriteLine("3");
+                        Console.Clear();
+                        Console.WriteLine("Player win {0} times", player.Wins);
+                        Console.WriteLine("Dealer win {0} times", dealer.Wins);
                         break;
                     default:
                         Console.WriteLine("Unknown command");
@@ -110,7 +170,7 @@ namespace HomeWork_ModuleTask
             {
                 for (int i = 0; i < Enum.GetNames(typeof(Suit)).Length; i++, index++)
                 {
-                    deck[index] = new Card((Rank)v, (Suit)i, false); 
+                    deck[index] = new Card((Rank)v, (Suit)i); 
                 }
             }
             return deck;
@@ -205,7 +265,33 @@ namespace HomeWork_ModuleTask
             {
                 DislayCard(hand[i]);
             }
+            Console.WriteLine("Score : {0}", GetHendScore(hand));
         }
 
+        static int GetHendScore(Card[] hand)
+        {
+            int score = 0;
+            for (int i = 0; i < hand.Length; i++)
+            {
+                score += (int)hand[i].Rank;
+            }
+            return score;
+        }
+
+        static void RewriteWindow(Player player, Player dealer)
+        {
+            Console.Clear();
+            Console.WriteLine("Player:");
+            DisplayHand(player.Hand);
+            if (dealer.Hand != null)
+            {
+                Console.SetCursorPosition((player.Hand.Length * 3) + 50, 0);
+                Console.WriteLine("Dealer:");
+                Console.SetCursorPosition((player.Hand.Length * 3) + 50, 1);
+                DisplayHand(dealer.Hand);
+            }
+
+            Console.SetCursorPosition(0, 2);
+        }
     }
 }
