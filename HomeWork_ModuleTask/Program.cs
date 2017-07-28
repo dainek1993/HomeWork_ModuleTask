@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace HomeWork_ModuleTask
 {
+    enum GameResult
+    {
+        PlayerWin,
+        DealerWin,
+        DeadHeat
+    }
     enum Suit
     {
         Hearts,
@@ -30,8 +36,10 @@ namespace HomeWork_ModuleTask
     struct Player
     {
         public Card[] Hand;
-        public int Count;
         public int Wins;
+        public bool IsDealer;
+        public bool IsBlackDjack;
+        public bool IsOverLoad;
     }
 
     struct Card
@@ -50,10 +58,10 @@ namespace HomeWork_ModuleTask
     {
         static void Main(string[] args)
         {
-            Player player = new Player();
-            Player dealer = new Player();
-
+            Player player = new Player() {IsDealer = false};
+            Player dealer = new Player() {IsDealer = true};
             int command = 0;
+
             do
             {
                 Console.WriteLine("1 - Game, 2 - View score 3 - Exit");
@@ -61,99 +69,69 @@ namespace HomeWork_ModuleTask
                 switch (command)
                 {
                     case 1:
-
-                        Card[] deck = GenerateDeck();
-                        Shuffle(deck);
+                        Console.Clear();
                         int index = 0;
-                        player.Hand = AddCard(player.Hand, deck[index++]);
-                        player.Hand = AddCard(player.Hand, deck[index++]);
-                        dealer.Hand = AddCard(dealer.Hand, deck[index++]);
-                        RewriteWindow(player, dealer);
-
-                        if ((player.Hand[0].Rank == Rank.Ace && player.Hand[1].Rank == Rank.Ace) || GetHendScore(player.Hand) == 21)
-                            Console.WriteLine("Black Jack");
-                        else
-                        {
-                            do
-                            {
-                                Console.WriteLine("More card? 1 - yes, 2 - no");
-                                if (int.Parse(Console.ReadLine()) == 1)
-                                {
-                                    player.Hand = AddCard(player.Hand, deck[index++]);
-                                    Console.Clear();
-                                    RewriteWindow(player, dealer);
-                                    if (GetHendScore(player.Hand) == 21)
-                                    {
-                                        Console.WriteLine("BlackJack");
-                                        break;
-                                    }
-                                    else if(GetHendScore(player.Hand) > 21)
-                                    {
-                                        Console.WriteLine("Overload");
-                                        break;
-                                    }
-                                }
-                                else { break; }                             
-                            } while (index < deck.Length);
-                        }
-
-                        Console.WriteLine("Dealer:");
-                        dealer.Hand = AddCard(dealer.Hand, deck[index++]);
-                        RewriteWindow(player, dealer);
-
-                        if ((player.Hand[0].Rank == Rank.Ace && player.Hand[1].Rank == Rank.Ace) || GetHendScore(dealer.Hand) == 21)
-                            Console.WriteLine("Dealer BlackJack");
-                        else
-                        {
-                            if (GetHendScore(dealer.Hand) < 21)
-                            {
-                                Random rnd = new Random();
-                                while (GetHendScore(dealer.Hand) < 21)
-                                {
-                                    if (GetHendScore(player.Hand) > 21 && rnd.Next(0, 100) > 50)
-                                        break;
-
-                                    dealer.Hand = AddCard(dealer.Hand, deck[index++]);
-                                    RewriteWindow(player, dealer);
-                                    if (GetHendScore(dealer.Hand) == 21)
-                                    {
-                                        Console.WriteLine("Dealer BlackJack");
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (GetHendScore(dealer.Hand) == GetHendScore(player.Hand))
-                        {
-                            Console.WriteLine("Dead hit");
-                        }
-                        else if (GetHendScore(dealer.Hand) > GetHendScore(player.Hand))
-                        {
-                            Console.WriteLine("Player WIN!!!!");
-                            player.Wins++;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Dealer win");
-                            dealer.Wins++;
-                        }
-
-                        index = 0;
-                        Shuffle(deck);
-                        dealer.Hand = null;
                         player.Hand = null;
+                        dealer.Hand = null;
+                        player.IsBlackDjack = player.IsOverLoad = false;
+                        dealer.IsBlackDjack = dealer.IsOverLoad = false;
+
+                        Card[] deck = InitializeGame();
+                        Random rnd = new Random();
+                        Console.SetCursorPosition(0, 0);
+                        Console.Write("                                                  ");
+                        Console.SetCursorPosition(0, 0);
+                        if (rnd.Next(0, 99) > 50)
+                        {
+                            Console.WriteLine("Player take cards first");
+                            int playerScore = CardDealing(ref player, deck, ref index);
+                            int dealerScore = CardDealing(ref dealer, deck, ref index);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Dealer take cards first");
+                            int dealerScore = CardDealing(ref dealer, deck, ref index);
+                            int playerScore = CardDealing(ref player, deck, ref index);
+                        }
+
+                        Console.SetCursorPosition(0, 0);
+                        Console.Write("                                                  ");
+                        Console.SetCursorPosition(0, 0);
+
+                        switch (GetGameResult(player, dealer))
+                        {
+                            case GameResult.DealerWin:
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Dealer Win!");
+                                Console.ForegroundColor = ConsoleColor.Black;
+                                dealer.Wins++;
+                                break;
+                            case GameResult.PlayerWin:
+                                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                                Console.WriteLine("Player Win!");
+                                Console.ForegroundColor = ConsoleColor.Black;
+                                player.Wins++;
+                                break;
+                            case GameResult.DeadHeat:
+                                Console.WriteLine("Dead heat...");
+                                break;
+                        }
+
+                        Console.SetCursorPosition(0, 5);
                         break;
+
                     case 2:
                         Console.Clear();
                         Console.WriteLine("Player win {0} times", player.Wins);
                         Console.WriteLine("Dealer win {0} times", dealer.Wins);
                         break;
+
                     case 3:
                         Console.Clear();
                         Console.WriteLine("Player win {0} times", player.Wins);
                         Console.WriteLine("Dealer win {0} times", dealer.Wins);
                         break;
+
                     default:
                         Console.WriteLine("Unknown command");
                         break;
@@ -170,7 +148,7 @@ namespace HomeWork_ModuleTask
             {
                 for (int i = 0; i < Enum.GetNames(typeof(Suit)).Length; i++, index++)
                 {
-                    deck[index] = new Card((Rank)v, (Suit)i); 
+                    deck[index] = new Card((Rank)v, (Suit)i);
                 }
             }
             return deck;
@@ -230,7 +208,7 @@ namespace HomeWork_ModuleTask
                     resultString += ((int)card.Rank).ToString();
                     break;
             }
-            
+
             switch (card.Suit)
             {
                 case Suit.Hearts:
@@ -278,20 +256,129 @@ namespace HomeWork_ModuleTask
             return score;
         }
 
-        static void RewriteWindow(Player player, Player dealer)
+        static void ReWriteHand(Player player)
         {
-            Console.Clear();
-            Console.WriteLine("Player:");
-            DisplayHand(player.Hand);
-            if (dealer.Hand != null)
+            if (player.IsDealer != true)
             {
-                Console.SetCursorPosition((player.Hand.Length * 3) + 50, 0);
+                Console.SetCursorPosition(0, 1);
+                Console.WriteLine("Player:");
+                DisplayHand(player.Hand);
+                if (player.IsBlackDjack)
+                    Console.WriteLine("Player has BlackDjack!");
+                else if (player.IsOverLoad)
+                    Console.WriteLine("Player Overload");
+            }
+            if (player.IsDealer)
+            {
+                Console.SetCursorPosition(50, 1);
                 Console.WriteLine("Dealer:");
-                Console.SetCursorPosition((player.Hand.Length * 3) + 50, 1);
-                DisplayHand(dealer.Hand);
+                Console.SetCursorPosition(50, 2);
+                DisplayHand(player.Hand);
+                Console.SetCursorPosition(50, 3);
+                if (player.IsBlackDjack)
+                    Console.WriteLine("Dealer has BlackDjack");
+                else if (player.IsOverLoad)
+                    Console.WriteLine("Dealer Overload");
             }
 
-            Console.SetCursorPosition(0, 2);
+            Console.SetCursorPosition(0, 3);
+        }
+
+        static Card[] InitializeGame()
+        {
+            Card[] deck = GenerateDeck();
+            Shuffle(deck);
+            return deck;
+        }
+
+        static bool IsBlackJack(Card[] hand)
+        {
+            return (GetHendScore(hand) == 21 || ((hand[0].Rank == Rank.Ace) && (hand[1].Rank == Rank.Ace)));
+        }
+
+        static int CardDealing(ref Player player, Card[] deck, ref int index)
+        {
+            player.Hand = AddCard(player.Hand, deck[index++]);
+            player.Hand = AddCard(player.Hand, deck[index++]);
+            ReWriteHand(player);
+            if (IsBlackJack(player.Hand))
+            {
+                player.IsBlackDjack = true;
+                ReWriteHand(player);
+                return 21;
+            }
+            else
+            {
+
+                while (GetHendScore(player.Hand) <= 21)
+                {
+                    if (player.IsDealer)
+                    {
+                        if (GetHendScore(player.Hand) < 17)
+                        {
+                            player.Hand = AddCard(player.Hand, deck[index++]);
+                        }
+                        else
+                        {
+                            ReWriteHand(player);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        Console.SetCursorPosition(0, 4);
+                        Console.WriteLine("Need more card? 1 - Yes 2 - No");
+                        Console.Write("     ");
+                        Console.SetCursorPosition(0, 5);
+                        if (int.Parse(Console.ReadLine()) == 1)
+                        {
+                            player.Hand = AddCard(player.Hand, deck[index++]);
+                            ReWriteHand(player);
+                        }
+                        else
+                        {
+                            ReWriteHand(player);
+                            break;
+                        }
+                    }
+                }
+
+                if (GetHendScore(player.Hand) > 21)
+                    player.IsOverLoad = true;
+
+                ReWriteHand(player);
+                return GetHendScore(player.Hand);
+            }
+        }
+
+        static GameResult GetGameResult(Player player, Player dealer)
+        {
+            if ((player.IsBlackDjack == true) && (dealer.IsBlackDjack == true))
+                return GameResult.DeadHeat;
+
+            if ((player.IsBlackDjack && !dealer.IsBlackDjack) || (!player.IsOverLoad && dealer.IsOverLoad))
+                return GameResult.PlayerWin;
+            else if ((dealer.IsBlackDjack && !player.IsBlackDjack) || (player.IsOverLoad && !dealer.IsOverLoad))
+                return GameResult.DealerWin;
+
+            if(player.IsOverLoad && dealer.IsOverLoad)
+            {
+                if (GetHendScore(player.Hand) < GetHendScore(dealer.Hand))
+                    return GameResult.PlayerWin;
+                else if (GetHendScore(player.Hand) > GetHendScore(dealer.Hand))
+                    return GameResult.DealerWin;
+                else
+                    return GameResult.DeadHeat;
+            }
+            else
+            {
+                if (GetHendScore(player.Hand) > GetHendScore(dealer.Hand))
+                    return GameResult.PlayerWin;
+                else if (GetHendScore(player.Hand) < GetHendScore(dealer.Hand))
+                    return GameResult.DealerWin;
+                else
+                    return GameResult.DeadHeat;
+            }
         }
     }
 }
