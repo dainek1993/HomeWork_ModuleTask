@@ -61,6 +61,7 @@ namespace HomeWork_ModuleTask
             Player player = new Player() {IsDealer = false};
             Player dealer = new Player() {IsDealer = true};
             int command = 0;
+            Console.SetWindowSize(80, 10);
 
             do
             {
@@ -117,6 +118,9 @@ namespace HomeWork_ModuleTask
                                 break;
                         }
 
+                        Console.SetCursorPosition(0, 4);
+                        Console.WriteLine("                               ");
+                        Console.WriteLine("   ");
                         Console.SetCursorPosition(0, 5);
                         break;
 
