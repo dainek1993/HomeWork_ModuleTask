@@ -61,6 +61,7 @@ namespace HomeWork_ModuleTask
             Player player = new Player() {IsDealer = false};
             Player dealer = new Player() {IsDealer = true};
             int command = 0;
+            Console.BackgroundColor = ConsoleColor.Gray;
             Console.SetWindowSize(80, 10);
 
             do
@@ -79,9 +80,11 @@ namespace HomeWork_ModuleTask
 
                         Card[] deck = InitializeGame();
                         Random rnd = new Random();
+
                         Console.SetCursorPosition(0, 0);
                         Console.Write("                                                  ");
                         Console.SetCursorPosition(0, 0);
+
                         if (rnd.Next(0, 99) > 50)
                         {
                             Console.WriteLine("Player take cards first");
