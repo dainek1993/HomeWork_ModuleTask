@@ -61,7 +61,6 @@ namespace HomeWork_ModuleTask
             Player player = new Player() {IsDealer = false};
             Player dealer = new Player() {IsDealer = true};
             int command = 0;
-            //Console.SetWindowSize(80, 10);
 
             do
             {
@@ -142,13 +141,12 @@ namespace HomeWork_ModuleTask
             switch (card.Suit)
             {
                 case Suit.Hearts:
-
                 case Suit.Diamonds:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     break;
                 case Suit.Clovers:
                 case Suit.Pikes:
-                    Console.ForegroundColor = ConsoleColor.Black;
+                    //Console.ForegroundColor = ConsoleColor.Black;
                     break;
             }
 
@@ -200,8 +198,6 @@ namespace HomeWork_ModuleTask
             }
             return rankString;
         }
-
-
 
         static void DisplayHand(Card[] hand)
         {
@@ -279,8 +275,7 @@ namespace HomeWork_ModuleTask
                     {
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Need more card? 1 - Yes 2 - No");
-                        Console.Write("     ");
-                        Console.SetCursorPosition(0, 5);
+                        ClearLine(0, 5);
                         if (int.Parse(Console.ReadLine()) == 1)
                         {
                             player.Hand = AddCard(player.Hand, deck[index++]);
@@ -312,10 +307,21 @@ namespace HomeWork_ModuleTask
             else if ((dealer.IsBlackDjack && !player.IsBlackDjack) || (player.IsOverLoad && !dealer.IsOverLoad))
                 return GameResult.DealerWin;
 
-            if ((player.IsOverLoad) && (GetHandScore(player.Hand) < GetHandScore(dealer.Hand)))
-                return GameResult.PlayerWin;
+            if (player.IsOverLoad)
+            {
+                if ((GetHandScore(player.Hand) < GetHandScore(dealer.Hand)))
+                    return GameResult.PlayerWin;
+                else
+                    return GameResult.DealerWin;
+            }
             else
-                return GameResult.DealerWin;
+            {
+                if ((GetHandScore(player.Hand) > GetHandScore(dealer.Hand)))
+                    return GameResult.PlayerWin;
+                else
+                    return GameResult.DealerWin;
+            }
+
         }
 
         static Card[] GetStartCards(Card[] deck, ref int index)
@@ -362,13 +368,13 @@ namespace HomeWork_ModuleTask
                 case GameResult.DealerWin:
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Dealer Win!");
-                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.ResetColor();
                     dealer.Wins++;
                     break;
                 case GameResult.PlayerWin:
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
                     Console.WriteLine("Player Win!");
-                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.ResetColor();
                     player.Wins++;
                     break;
                 case GameResult.DeadHeat:
